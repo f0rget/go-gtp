@@ -28,5 +28,5 @@ type InvalidTypeError struct {
 
 // Error returns message with the invalid type given.
 func (e *InvalidTypeError) Error() string {
-	return fmt.Sprintf("got invalid type: %v", e.Type)
+	return fmt.Sprintf("gtv2: got invalid type: %v", e.Type)
 }

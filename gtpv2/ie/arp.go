@@ -5,6 +5,7 @@
 package ie
 
 import "io"
+import "log"
 
 // NewAllocationRetensionPriority creates a new AllocationRetensionPriority IE.
 func NewAllocationRetensionPriority(pci, pl, pvi uint8) *IE {
@@ -15,6 +16,7 @@ func NewAllocationRetensionPriority(pci, pl, pvi uint8) *IE {
 
 func (i *IE) AllocationRetensionPriority() (uint8, error) {
 	if i.Type != AllocationRetensionPriority {
+		log.Printf("HERE IS SHIET")
 		return 0, &InvalidTypeError{Type: i.Type}
 	}
 	if len(i.Payload) < 1 {

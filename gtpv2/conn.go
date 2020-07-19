@@ -444,7 +444,8 @@ func (c *Conn) VersionNotSupportedIndication(raddr net.Addr, req message.Message
 	return nil
 }
 
-// ParseCreateSession iterates through the ie and returns a session
+// ParseCreateSession iterates through the ie,
+// populates and returns a session
 func (c *Conn) ParseCreateSession(raddr net.Addr, IEs ...*ie.IE) (*Session, error) {
 	// retrieve values from IEs given.
 	sess := NewSession(raddr, &Subscriber{Location: &Location{}})
@@ -513,6 +514,11 @@ func (c *Conn) ParseCreateSession(raddr net.Addr, IEs ...*ie.IE) (*Session, erro
 							return nil, err
 						}
 					case ie.BearerQoS:
+						// bug PriorityLevel defined only for
+						// AllocationRetensionPriority type
+						// but ie is BearerQoS
+						// XXX: figure out how it was before and
+						// how to merge it
 						br.PL, err = child.PriorityLevel()
 						if err != nil {
 							return nil, err

@@ -120,6 +120,7 @@ func main() {
 			IMSI: "123451234567891", MSISDN: "8130900000001", IMEI: "123456780000011",
 			Location: &v2.Location{MCC: "123", MNC: "45", RATType: v2.RATTypeEUTRAN, TAI: 0x0001, ECI: 0x00000101},
 		},
+		/*
 		&v2.Subscriber{
 			IMSI: "123451234567892", MSISDN: "8130900000002", IMEI: "123456780000012",
 			Location: &v2.Location{MCC: "123", MNC: "45", RATType: v2.RATTypeEUTRAN, TAI: 0x0002, ECI: 0x00000202},
@@ -136,6 +137,7 @@ func main() {
 			IMSI: "123451234567895", MSISDN: "8130900000005", IMEI: "123456780000015",
 			Location: &v2.Location{MCC: "123", MNC: "45", RATType: v2.RATTypeEUTRAN, TAI: 0x0005, ECI: 0x00000505},
 		},
+		*/
 	})
 
 	bearer := v2.NewBearer(5, "", &v2.QoSProfile{
@@ -159,6 +161,7 @@ func main() {
 					bearer.APN = "some-apn-2.example"
 				}
 				if err := handleAttach(raddr, s11Conn, sub, bearer); err != nil {
+					log.Printf("handleAttach: %s", err)
 					errCh <- err
 					return
 				}
@@ -167,6 +170,7 @@ func main() {
 			go func() {
 				sess, err := s11Conn.GetSessionByIMSI(imsi)
 				if err != nil {
+					log.Printf("s11Conn: %s", err)
 					errCh <- err
 					return
 				}
@@ -175,6 +179,7 @@ func main() {
 				enbFTEID := uConn.NewFTEID(v2.IFTypeS1UeNodeBGTPU, enbIP, "")
 				teid, err := sess.GetTEID(v2.IFTypeS11S4SGWGTPC)
 				if err != nil {
+					log.Printf("GetTeid: %s", err)
 					errCh <- err
 				}
 
@@ -183,11 +188,13 @@ func main() {
 					ie.NewIndicationFromOctets(0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00),
 					ie.NewBearerContext(ie.NewEPSBearerID(sess.GetDefaultBearer().EBI), enbFTEID),
 				); err != nil {
+					log.Printf("newbearer: %s", err)
 					errCh <- err
 					return
 				}
 				it, err := enbFTEID.InterfaceType()
 				if err != nil {
+					log.Printf("enb: %s", err)
 					errCh <- err
 					return
 				}
@@ -201,7 +208,7 @@ func main() {
 				loggerCh <- fmt.Sprintf("Sent Modify Bearer Request for %s", imsi)
 			}()
 		// delete all the sessions after 30 seconds
-		case <-time.After(30 * time.Second):
+		case <-time.After(6000 * time.Second):
 			for _, sess := range s11Conn.Sessions() {
 				teid, err := sess.GetTEID(v2.IFTypeS11S4SGWGTPC)
 				if err != nil {

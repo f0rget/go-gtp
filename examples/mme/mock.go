@@ -6,6 +6,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"net"
 	"strings"
 	"time"
@@ -54,19 +55,25 @@ func handleAttach(raddr net.Addr, c *v2.Conn, sub *v2.Subscriber, br *v2.Bearer)
 	// remove previous session for the same subscriber if exists.
 	sess, err := c.GetSessionByIMSI(sub.IMSI)
 	if err != nil {
+		log.Printf("get session: %s", err)
 		switch err.(type) {
 		case *v2.UnknownIMSIError:
+			//log.Printf("UnknownImsi: %s", err)
 			// whole new session. just ignore.
 		default:
+			log.Printf("unexpected: %s", err)
 			return errors.Wrap(err, "got something unexpected")
 		}
 	} else {
+		log.Printf("else err == nil: %s", err)
 		teid, err := sess.GetTEID(v2.IFTypeS11S4SGWGTPC)
 		if err != nil {
+			log.Printf("teid not found: %s", err)
 			return v2.ErrTEIDNotFound
 		}
 		// send Delete Session Request to cleanup sessions in S/P-GW.
 		if _, err := c.DeleteSession(teid, sess); err != nil {
+			log.Printf("delete session: %s", err)
 			return errors.Wrap(err, "got something unexpected")
 		}
 		c.RemoveSession(sess)
@@ -74,16 +81,17 @@ func handleAttach(raddr net.Addr, c *v2.Conn, sub *v2.Subscriber, br *v2.Bearer)
 
 	pgwAddr, err := getPGWIP(br.APN)
 	if err != nil {
+		log.Printf("getPGWIP: %s", err)
 		return err
 	}
 
-	var pci, pvi uint8
-	if br.PCI {
-		pci = 1
-	}
-	if br.PVI {
-		pvi = 1
-	}
+	//var pci, pvi uint8
+	//if br.PCI {
+	//	pci = 1
+	//}
+	//if br.PVI {
+	//	pvi = 1
+	//}
 	localIP := strings.Split(c.LocalAddr().String(), ":")[0]
 	_, _, err = c.CreateSession(
 		raddr,
@@ -106,13 +114,15 @@ func handleAttach(raddr net.Addr, c *v2.Conn, sub *v2.Subscriber, br *v2.Bearer)
 		ie.NewAggregateMaximumBitRate(0, 0),
 		ie.NewBearerContext(
 			ie.NewEPSBearerID(br.EBI),
-			ie.NewBearerQoS(pci, br.PL, pvi, br.QCI, br.MBRUL, br.MBRDL, br.GBRUL, br.GBRDL),
+			ie.NewBearerQoS(1, 2, 1, 0xff, 0, 0, 0, 0),
+			//ie.NewBearerQoS(pci, br.PL, pvi, br.QCI, br.MBRUL, br.MBRDL, br.GBRUL, br.GBRDL),
 		),
 		ie.NewFullyQualifiedCSID(localIP, 1),
 		ie.NewServingNetwork(sub.MCC, sub.MNC),
 		ie.NewUETimeZone(9*time.Hour, 0),
 	)
 	if err != nil {
+		log.Printf("NEW FAIL: %s", err)
 		return err
 	}
 
